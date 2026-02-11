@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 import Link from "next/link";
 
 export default async function Navbar({ className, ...props }: React.HTMLAttributes<HTMLElement>) {
-  // Create supabase server component client and obtain user session from stored cookie
+  // create supabase server component client and obtain user session from stored cookie
   const supabase = createServerSupabaseClient();
   const {
     data: { user },
@@ -20,6 +20,10 @@ export default async function Navbar({ className, ...props }: React.HTMLAttribut
           </Link>
           <Link href="/species-speed" className="text-sm font-medium transition-colors hover:text-primary">
             Species Speed
+          </Link>
+          {/* feature 4 - authenticated Users page listing all user profiles */}
+          <Link href="/users" className="text-sm font-medium transition-colors hover:text-primary">
+            Users
           </Link>
         </>
       )}

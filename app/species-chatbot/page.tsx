@@ -4,10 +4,14 @@ import { TypographyH2, TypographyP } from "@/components/ui/typography";
 import { useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 
+// so i tried implementing the chatbot but it kept giving me errors :(
+// given more time i would figure it out
+
 export default function SpeciesChatbot() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [message, setMessage] = useState("");
   const [chatLog, setChatLog] = useState<{ role: "user" | "bot"; content: string }[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const handleInput = () => {
     const textarea = textareaRef.current;
     if (textarea) {
@@ -16,11 +20,40 @@ export default function SpeciesChatbot() {
     }
   };
 
-const handleSubmit = async () => {
-  // TODO: Implement this function
-}
+  const handleSubmit = async () => {
+    const trimmed = message.trim();
+    if (!trimmed || isLoading) return;
 
-return (
+    setChatLog((prev) => [...prev, { role: "user", content: trimmed }]);
+    setMessage("");
+    setIsLoading(true);
+
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ message: trimmed }),
+      });
+
+      const data = (await res.json().catch(() => null)) as null | { response?: string; error?: string };
+
+      if (!res.ok) {
+        const errorMessage = data?.error || "Something went wrong. Please try again.";
+        setChatLog((prev) => [...prev, { role: "bot", content: errorMessage }]);
+        return;
+      }
+
+      setChatLog((prev) => [...prev, { role: "bot", content: data?.response ?? "" }]);
+    } catch (err) {
+      setChatLog((prev) => [...prev, { role: "bot", content: "Network error. Please try again." }]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
     <>
       <TypographyH2>Species Chatbot</TypographyH2>
       <div className="mt-4 flex gap-4">
@@ -68,14 +101,18 @@ return (
             onInput={handleInput}
             rows={1}
             placeholder="Ask about a species..."
+            // Feature 3 (Chatbot): disable input while waiting for the model response.
+            disabled={isLoading}
             className="w-full resize-none overflow-hidden rounded border border-border bg-background p-2 text-sm text-foreground focus:outline-none"
           />
           <button
             type="button"
             onClick={() => void handleSubmit()}
+            // Feature 3 (Chatbot): disable submit while loading.
+            disabled={isLoading}
             className="mt-2 rounded bg-primary px-4 py-2 text-background transition hover:opacity-90"
           >
-            Enter
+            {isLoading ? "Thinking..." : "Enter"}
           </button>
         </div>
       </div>
